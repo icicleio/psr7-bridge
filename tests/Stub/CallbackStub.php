@@ -1,5 +1,5 @@
 <?php
-namespace Icicle\Tests\Dns\Stub;
+namespace Icicle\Tests\Psr7Bridge\Stub;
 
 class CallbackStub
 {

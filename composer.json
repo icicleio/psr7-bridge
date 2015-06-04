@@ -1,6 +1,6 @@
 {
-    "name": "icicleio/psr7-adaptor",
-    "description": "Adapts the messages of the Asynchronous Icicle HTTP component to synchronous PSR-7 interfaces.",
+    "name": "icicleio/psr7-bridge",
+    "description": "Bridges the messages of the Asynchronous Icicle HTTP component to synchronous PSR-7 interfaces.",
     "keywords": [
         "psr7",
         "http"
@@ -22,12 +22,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Icicle\\Psr7Adaptor\\": "src"
+            "Icicle\\Psr7Bridge\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Icicle\\Tests\\Psr7Adaptor\\": "tests"
+            "Icicle\\Tests\\Psr7Bridge\\": "tests"
         }
     }
 }

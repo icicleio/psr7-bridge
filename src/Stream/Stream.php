@@ -1,5 +1,5 @@
 <?php
-namespace Icicle\Psr7Adaptor\Stream;
+namespace Icicle\Psr7Bridge\Stream;
 
 use Icicle\Http\Exception\LogicException;
 use Icicle\Loop;

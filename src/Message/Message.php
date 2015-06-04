@@ -1,8 +1,8 @@
 <?php
-namespace Icicle\Psr7Adaptor\Message;
+namespace Icicle\Psr7Bridge\Message;
 
 use Icicle\Http\Message\MessageInterface;
-use Icicle\Psr7Adaptor\Stream\Stream;
+use Icicle\Psr7Bridge\Stream\Stream;
 use Psr\Http\Message\StreamInterface;
 
 abstract class Message implements \Psr\Http\Message\MessageInterface

@@ -1,5 +1,5 @@
 <?php
-namespace Icicle\Tests\Psr7Adaptor;
+namespace Icicle\Tests\Psr7Bridge;
 
 abstract class TestCase extends \PHPUnit_Framework_TestCase
 {

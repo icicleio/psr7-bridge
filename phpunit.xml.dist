@@ -13,7 +13,7 @@
     stopOnFailure="false"
 >
     <testsuites>
-        <testsuite name="Icicle PSR-7 Adaptor">
+        <testsuite name="Icicle PSR-7 Bridge">
             <directory>tests</directory>
         </testsuite>
     </testsuites>
