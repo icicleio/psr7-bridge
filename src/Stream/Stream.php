@@ -21,8 +21,6 @@ class Stream implements PsrStreamInterface
         $this->stream = $stream;
     }
 
-    // @todo Implement other interface methods.
-
     /**
      * {@inheritdoc}
      */
@@ -41,7 +39,7 @@ class Stream implements PsrStreamInterface
         $result = $promise->getResult();
 
         if ($promise->isRejected()) {
-            new RuntimeException('Error reading from stream', 0, $result);
+            throw new RuntimeException('Error reading from stream', 0, $result);
         }
 
         return $result;
@@ -65,7 +63,7 @@ class Stream implements PsrStreamInterface
         $result = $promise->getResult();
 
         if ($promise->isRejected()) {
-            new RuntimeException('Error writing to stream', 0, $result);
+            throw new RuntimeException('Error writing to stream', 0, $result);
         }
 
         return $result;
@@ -76,7 +74,7 @@ class Stream implements PsrStreamInterface
      */
     public function __toString()
     {
-        // TODO: Implement __toString() method.
+
     }
 
     /**
@@ -100,7 +98,10 @@ class Stream implements PsrStreamInterface
      */
     public function getSize()
     {
-        // TODO: Implement getSize() method.
+        if ($this->stream instanceof SeekableStreamInterface) {
+            return $this->stream->getLength();
+        }
+        return null;
     }
 
     /**
@@ -108,7 +109,10 @@ class Stream implements PsrStreamInterface
      */
     public function tell()
     {
-        // TODO: Implement tell() method.
+        if ($this->stream instanceof SeekableStreamInterface) {
+            return $this->stream->tell();
+        }
+        return null;
     }
 
     /**
@@ -176,6 +180,9 @@ class Stream implements PsrStreamInterface
      */
     public function getMetadata($key = null)
     {
-        // TODO: Implement getMetadata() method.
+        if (null === $key) {
+            return [];
+        }
+        return null;
     }
 }
