@@ -12,7 +12,7 @@ abstract class TestCase extends \PHPUnit_Framework_TestCase
      */
     public function createCallback($count)
     {
-        $mock = $this->getMock('Icicle\Tests\Dns\Stub\CallbackStub');
+        $mock = $this->getMock('Icicle\Tests\Psr7Bridge\Stub\CallbackStub');
 
         $mock->expects($this->exactly($count))
             ->method('__invoke');

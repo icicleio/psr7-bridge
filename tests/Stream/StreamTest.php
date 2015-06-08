@@ -1,32 +1,50 @@
 <?php
 
-namespace Icicle\Tests\Psr7Bridge;
+namespace Icicle\Tests\Psr7Bridge\Stream;
 
 use Icicle\Promise\PromiseInterface;
 use Icicle\Loop;
 use Icicle\Psr7Bridge\Stream\Stream;
 use Icicle\Stream\ReadableStreamInterface;
 use Icicle\Stream\WritableStreamInterface;
-use PHPUnit_Framework_TestCase;
+use Icicle\Tests\Psr7Bridge\TestCase;
 use Prophecy\Prophecy\ObjectProphecy;
 use RuntimeException;
 
-class StreamTest extends PHPUnit_Framework_TestCase
+class StreamTest extends TestCase
 {
     public function testReadReturnsDataFromAsyncStream()
     {
-        /** @var ObjectProphecy|ReadableStreamInterface $readableStream */
-        $readableStream = $this->prophesize(ReadableStreamInterface::class);
+        $promise = $this->getMock(PromiseInterface::class);
 
-        /** @var ObjectProphecy|PromiseInterface $promise */
-        $promise = $this->prophesize(PromiseInterface::class);
-        $promise->isPending()->willReturn(false);
-        $promise->getResult()->willReturn('ABCDEFGHIJ');
-        $promise->isRejected()->willReturn(false);
+        $promise
+            ->expects($this->exactly(2))
+            ->method('isPending')
+            ->will($this->returnCallback(function () {
+                static $pending = true;
+                if ($pending) {
+                    // Schedule a function to simulate an event that resolves the promise.
+                    Loop\schedule(function () use (&$pending) {
+                        $pending = false;
+                    });
+                }
+                return $pending;
+            }));
 
-        $readableStream->read(10)->willReturn($promise->reveal());
+        $promise
+            ->expects($this->once())
+            ->method('getResult')
+            ->will($this->returnValue('ABCDEFGHIJ'));
 
-        $stream = new Stream($readableStream->reveal());
+        /** @var \PHPUnit_Framework_MockObject_MockObject|ReadableStreamInterface $readableStream */
+        $readableStream = $this->getMock(ReadableStreamInterface::class);
+
+        $readableStream
+            ->expects($this->once())
+            ->method('read')
+            ->will($this->returnValue($promise));
+
+        $stream = new Stream($readableStream);
         $result = $stream->read(10);
         $this->assertEquals('ABCDEFGHIJ', $result);
     }
@@ -43,18 +61,36 @@ class StreamTest extends PHPUnit_Framework_TestCase
 
     public function testWriteSendsDataToAsyncStream()
     {
-        /** @var ObjectProphecy|WritableStreamInterface $readableStream */
-        $readableStream = $this->prophesize(WritableStreamInterface::class);
+        $promise = $this->getMock(PromiseInterface::class);
 
-        /** @var ObjectProphecy|PromiseInterface $promise */
-        $promise = $this->prophesize(PromiseInterface::class);
-        $promise->isPending()->willReturn(false);
-        $promise->getResult()->willReturn(10);
-        $promise->isRejected()->willReturn(false);
+        $promise
+            ->expects($this->exactly(2))
+            ->method('isPending')
+            ->will($this->returnCallback(function () {
+                static $pending = true;
+                if ($pending) {
+                    // Schedule a function to simulate an event that resolves the promise.
+                    Loop\schedule(function () use (&$pending) {
+                        $pending = false;
+                    });
+                }
+                return $pending;
+            }));
 
-        $readableStream->write('ABCDEFGHIJ')->willReturn($promise->reveal());
+        $promise
+            ->expects($this->once())
+            ->method('getResult')
+            ->will($this->returnValue(10));
 
-        $stream = new Stream($readableStream->reveal());
+        /** @var \PHPUnit_Framework_MockObject_MockObject|WritableStreamInterface $writableStream */
+        $writableStream = $this->getMock(WritableStreamInterface::class);
+
+        $writableStream
+            ->expects($this->once())
+            ->method('write')
+            ->will($this->returnValue($promise));
+
+        $stream = new Stream($writableStream);
         $result = $stream->write('ABCDEFGHIJ');
         $this->assertEquals(10, $result);
     }
