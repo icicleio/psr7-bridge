@@ -140,7 +140,16 @@ class Stream implements PsrStreamInterface
             throw new RuntimeException('Stream is not seekable');
         }
 
-        // TODO: Implement seek() method.
+        $promise = $this->stream->seek($offset, $whence);
+
+        while ($promise->isPending()) {
+            Loop\tick(true);
+        }
+
+        if ($promise->isRejected()) {
+            $result = $promise->getResult();
+            throw new RuntimeException('Error seeking stream', 0, $result);
+        }
     }
 
     /**
@@ -148,7 +157,7 @@ class Stream implements PsrStreamInterface
      */
     public function rewind()
     {
-        // TODO: Implement rewind() method.
+        $this->seek(0);
     }
 
     /**

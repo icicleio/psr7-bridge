@@ -7,6 +7,8 @@ use Icicle\Promise\PromiseInterface;
 use Icicle\Loop;
 use Icicle\Psr7Bridge\Stream\Stream;
 use Icicle\Stream\ReadableStreamInterface;
+use Icicle\Stream\SeekableStreamInterface;
+use Icicle\Stream\StreamInterface;
 use Icicle\Stream\WritableStreamInterface;
 use PHPUnit_Framework_TestCase;
 use Prophecy\Prophecy\ObjectProphecy;
@@ -88,16 +90,7 @@ class StreamTest extends PHPUnit_Framework_TestCase
         $stream->write("XYZ");
     }
 
-    public function testCloseClosesStream()
-    {
-        /** @var ObjectProphecy|WritableStreamInterface $writableStream */
-        $writableStream = $this->prophesize(WritableStreamInterface::class);
-        $writableStream->close()->shouldBeCalled();
-        $stream = new Stream($writableStream->reveal());
-        $stream->close();
-    }
-
-    public function testWriteThrowExceptionWhenWriteFails()
+    public function testWriteThrowsExceptionWhenWriteFails()
     {
         /** @var ObjectProphecy|WritableStreamInterface $writableStream */
         $writableStream = $this->prophesize(WritableStreamInterface::class);
@@ -113,6 +106,111 @@ class StreamTest extends PHPUnit_Framework_TestCase
         $stream = new Stream($writableStream->reveal());
         $this->setExpectedException(RuntimeException::class);
         $stream->write('ABCDEFGHIJ');
+    }
+
+    public function testCloseClosesStream()
+    {
+        /** @var ObjectProphecy|WritableStreamInterface $writableStream */
+        $writableStream = $this->prophesize(WritableStreamInterface::class);
+        $writableStream->close()->shouldBeCalled();
+        $stream = new Stream($writableStream->reveal());
+        $stream->close();
+    }
+
+    public function testGetSizeReturnsStreamLength()
+    {
+        /** @var ObjectProphecy|SeekableStreamInterface $seekableStream */
+        $seekableStream = $this->prophesize(SeekableStreamInterface::class);
+        $seekableStream->getLength()->willReturn(250);
+        $stream = new Stream($seekableStream->reveal());
+        $this->assertEquals(250, $stream->getSize());
+    }
+
+    public function testGetSizeReturnsNullWhenStreamIsNotSeekable()
+    {
+        /** @var ObjectProphecy|StreamInterface $nonSeekableStream */
+        $nonSeekableStream = $this->prophesize(StreamInterface::class);
+        $stream = new Stream($nonSeekableStream->reveal());
+        $this->assertNull($stream->getSize());
+    }
+
+    public function tellReturnsPointerPosition()
+    {
+        /** @var ObjectProphecy|SeekableStreamInterface $seekableStream */
+        $seekableStream = $this->prophesize(SeekableStreamInterface::class);
+        $seekableStream->tell()->willReturn(125);
+        $stream = new Stream($seekableStream->reveal());
+        $this->assertEquals(125, $stream->tell());
+    }
+
+    public function testTellReturnsNullWhenStreamIsNotSeekable()
+    {
+        /** @var ObjectProphecy|StreamInterface $nonSeekableStream */
+        $nonSeekableStream = $this->prophesize(StreamInterface::class);
+        $stream = new Stream($nonSeekableStream->reveal());
+        $this->assertNull($stream->tell());
+    }
+
+    public function testSeekReturnsSeeksAsyncStream()
+    {
+        /** @var ObjectProphecy|SeekableStreamInterface $seekableStream */
+        $seekableStream = $this->prophesize(SeekableStreamInterface::class);
+
+        /** @var ObjectProphecy|PromiseInterface $promise */
+        $promise = $this->prophesize(PromiseInterface::class);
+        $promise->isPending()->willReturn(false);
+        $promise->getResult()->willReturn(null);
+        $promise->isRejected()->willReturn(false);
+
+        $seekableStream->seek(10, SEEK_SET)->willReturn($promise->reveal());
+
+        $stream = new Stream($seekableStream->reveal());
+        $stream->seek(10);
+    }
+
+    public function testSeekThrowsExceptionWhenStreamIsNotSeekable()
+    {
+        /** @var ObjectProphecy|StreamInterface $nonSeekableStream */
+        $nonSeekableStream = $this->prophesize(StreamInterface::class);
+
+        $stream = new Stream($nonSeekableStream->reveal());
+        $this->setExpectedException(RuntimeException::class);
+        $stream->seek(110);
+    }
+
+    public function testSeekThrowsExceptionWhenSeekFails()
+    {
+        /** @var ObjectProphecy|SeekableStreamInterface $seekableStream */
+        $seekableStream = $this->prophesize(SeekableStreamInterface::class);
+
+        /** @var ObjectProphecy|PromiseInterface $promise */
+        $promise = $this->prophesize(PromiseInterface::class);
+        $promise->isPending()->willReturn(false);
+        $promise->getResult()->willReturn(new Exception());
+        $promise->isRejected()->willReturn(true);
+
+        $seekableStream->seek(110, SEEK_SET)->willReturn($promise->reveal());
+
+        $stream = new Stream($seekableStream->reveal());
+        $this->setExpectedException(RuntimeException::class);
+        $stream->seek(110);
+    }
+
+    public function testRewindUsesSeeksToResetPointer()
+    {
+        /** @var ObjectProphecy|SeekableStreamInterface $seekableStream */
+        $seekableStream = $this->prophesize(SeekableStreamInterface::class);
+
+        /** @var ObjectProphecy|PromiseInterface $promise */
+        $promise = $this->prophesize(PromiseInterface::class);
+        $promise->isPending()->willReturn(false);
+        $promise->getResult()->willReturn(null);
+        $promise->isRejected()->willReturn(false);
+
+        $seekableStream->seek(0, SEEK_SET)->willReturn($promise->reveal());
+
+        $stream = new Stream($seekableStream->reveal());
+        $stream->rewind(0);
     }
 
     public function testGetMetadataReturnsEmptyArrayIfNoKeyIsGiven()
