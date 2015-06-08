@@ -35,13 +35,17 @@ class Stream implements PsrStreamInterface
         $promise = $this->stream->read($length);
 
         while ($promise->isPending()) {
+            if (Loop\isEmpty()) {
+                throw new RuntimeException('Loop emptied without resolving the promise');
+            }
+
             Loop\tick(true);
         }
 
         $result = $promise->getResult();
 
         if ($promise->isRejected()) {
-            new RuntimeException('Error reading from stream', 0, $result);
+            throw new RuntimeException('Error reading from stream', 0, $result);
         }
 
         return $result;
@@ -59,6 +63,10 @@ class Stream implements PsrStreamInterface
         $promise = $this->stream->write($data);
 
         while ($promise->isPending()) {
+            if (Loop\isEmpty()) {
+                throw new RuntimeException('Loop emptied without resolving the promise');
+            }
+
             Loop\tick(true);
         }
 
