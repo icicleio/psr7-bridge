@@ -179,12 +179,13 @@ class StreamTest extends TestCase
         $this->assertEquals(125, $stream->tell());
     }
 
-    public function testTellReturnsNullWhenStreamIsNotSeekable()
+    public function testTellThrowsExceptionWhenStreamIsNotSeekable()
     {
         /** @var ObjectProphecy|StreamInterface $nonSeekableStream */
         $nonSeekableStream = $this->prophesize(StreamInterface::class);
         $stream = new Stream($nonSeekableStream->reveal());
-        $this->assertNull($stream->tell());
+        $this->setExpectedException(RuntimeException::class);
+        $stream->tell();
     }
 
     public function testSeekReturnsSeeksAsyncStream()
@@ -249,7 +250,7 @@ class StreamTest extends TestCase
         $stream->rewind(0);
     }
 
-    public function testGetMetadataReturnsEmptyArrayIfNoKeyIsGiven()
+    public function testGetMetadataReturnsEmptyArrayIfNoKeyIsGivenForNonSocketStream()
     {
         /** @var ObjectProphecy|WritableStreamInterface $readableStream */
         $readableStream = $this->prophesize(WritableStreamInterface::class);
@@ -257,11 +258,11 @@ class StreamTest extends TestCase
         $this->assertEquals([], $stream->getMetadata());
     }
 
-    public function testGetMetadataReturnsNullArrayIfKeyIsGiven()
+    public function testGetMetadataReturnsNullArrayIfKeyIsGivenForNonSocketStream()
     {
         /** @var ObjectProphecy|WritableStreamInterface $readableStream */
-        $readableStream = $this->prophesize(WritableStreamInterface::class);
-        $stream = new Stream($readableStream->reveal());
+        $writableStream = $this->prophesize(WritableStreamInterface::class);
+        $stream = new Stream($writableStream->reveal());
         $this->assertEquals(null, $stream->getMetadata('uri'));
     }
 }

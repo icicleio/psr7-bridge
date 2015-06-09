@@ -2,6 +2,7 @@
 namespace Icicle\Psr7Bridge\Stream;
 
 use Icicle\Loop;
+use Icicle\Socket\Socket;
 use Icicle\Stream\ReadableStreamInterface;
 use Icicle\Stream\SeekableStreamInterface;
 use Icicle\Stream\StreamInterface;
@@ -11,6 +12,8 @@ use RuntimeException;
 
 class Stream implements PsrStreamInterface
 {
+    const CHUNK_SIZE = 8192;
+
     /**
      * @var \Icicle\Stream\StreamInterface
      */
@@ -36,7 +39,6 @@ class Stream implements PsrStreamInterface
             if (Loop\isEmpty()) {
                 throw new RuntimeException('Loop emptied without resolving the promise');
             }
-
             Loop\tick(true);
         }
 
@@ -64,7 +66,6 @@ class Stream implements PsrStreamInterface
             if (Loop\isEmpty()) {
                 throw new RuntimeException('Loop emptied without resolving the promise');
             }
-
             Loop\tick(true);
         }
 
@@ -82,7 +83,11 @@ class Stream implements PsrStreamInterface
      */
     public function __toString()
     {
-
+        try {
+            return $this->getContents();
+        } catch (RuntimeException $e) {
+            return '';
+        }
     }
 
     /**
@@ -90,7 +95,9 @@ class Stream implements PsrStreamInterface
      */
     public function close()
     {
-        $this->stream->close();
+        if (null !== $this->stream) {
+            $this->stream->close();
+        }
     }
 
     /**
@@ -98,7 +105,13 @@ class Stream implements PsrStreamInterface
      */
     public function detach()
     {
-        // TODO: Implement detach() method.
+        $stream = $this->stream;
+        $this->stream = null;
+
+        if ($stream instanceof Socket) {
+            return $stream->getResource();
+        }
+        return null;
     }
 
     /**
@@ -106,7 +119,7 @@ class Stream implements PsrStreamInterface
      */
     public function getSize()
     {
-        if ($this->stream instanceof SeekableStreamInterface) {
+        if ($this->isSeekable()) {
             return $this->stream->getLength();
         }
         return null;
@@ -117,10 +130,10 @@ class Stream implements PsrStreamInterface
      */
     public function tell()
     {
-        if ($this->stream instanceof SeekableStreamInterface) {
-            return $this->stream->tell();
+        if (!$this->isSeekable()) {
+            throw new RuntimeException('Stream is not seekable');
         }
-        return null;
+        return $this->stream->tell();
     }
 
     /**
@@ -128,7 +141,7 @@ class Stream implements PsrStreamInterface
      */
     public function eof()
     {
-        // TODO: Implement eof() method.
+        return $this->isReadable() && $this->stream->isReadable();
     }
 
     /**
@@ -151,6 +164,9 @@ class Stream implements PsrStreamInterface
         $promise = $this->stream->seek($offset, $whence);
 
         while ($promise->isPending()) {
+            if (Loop\isEmpty()) {
+                throw new RuntimeException('Loop emptied without resolving the promise');
+            }
             Loop\tick(true);
         }
 
@@ -189,7 +205,13 @@ class Stream implements PsrStreamInterface
      */
     public function getContents()
     {
-        // TODO: Implement getContents() method.
+        $contents = '';
+
+        while (!$this->eof()) {
+            $contents .= $this->read(self::CHUNK_SIZE);
+        }
+
+        return $contents;
     }
 
     /**
@@ -197,6 +219,18 @@ class Stream implements PsrStreamInterface
      */
     public function getMetadata($key = null)
     {
+        if ($this->stream instanceof Socket) {
+            $resource = $this->stream->getResource();
+
+            if (get_resource_type($resource) === 'stream') {
+                $metadata = stream_get_meta_data($resource);
+                if (null === $key) {
+                    return $metadata;
+                }
+                return isset($metadata[$key]) ? $metadata[$key] : null;
+            }
+        }
+
         if (null === $key) {
             return [];
         }
