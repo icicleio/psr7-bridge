@@ -141,7 +141,7 @@ class Stream implements PsrStreamInterface
      */
     public function eof()
     {
-        return $this->isReadable() && $this->stream->isReadable();
+        return !$this->isReadable() || !$this->stream->isReadable();
     }
 
     /**
