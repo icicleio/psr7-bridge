@@ -319,21 +319,21 @@ class StreamTest extends TestCase
         $this->assertEquals('RESOURCE', $stream->detach());
     }
 
-//    public function testEofReturnsFalseWhenStreamAndWrappedStreamAreReadable()
-//    {
-//        /** @var ObjectProphecy|ReadableStreamInterface $readableStream */
-//        $readableStream = $this->prophesize(ReadableStreamInterface::class);
-//        $readableStream->isReadable()->willReturn(true);
-//        $stream = new Stream($readableStream->reveal());
-//        $this->assertFalse($stream->eof());
-//    }
-//
-//    public function testEofReturnsFalseWhenStreamOrWrappedStreamAreNotReadable()
-//    {
-//        /** @var ObjectProphecy|ReadableStreamInterface $readableStream */
-//        $readableStream = $this->prophesize(ReadableStreamInterface::class);
-//        $readableStream->isReadable()->willReturn(false);
-//        $stream = new Stream($readableStream->reveal());
-//        $this->assertTrue($stream->eof());
-//    }
+    public function testEofReturnsFalseWhenStreamAndWrappedStreamAreReadable()
+    {
+        /** @var ObjectProphecy|ReadableStreamInterface $readableStream */
+        $readableStream = $this->prophesize(ReadableStreamInterface::class);
+        $readableStream->isReadable()->willReturn(true);
+        $stream = new Stream($readableStream->reveal());
+        $this->assertFalse($stream->eof());
+    }
+
+    public function testEofReturnsFalseWhenStreamOrWrappedStreamAreNotReadable()
+    {
+        /** @var ObjectProphecy|ReadableStreamInterface $readableStream */
+        $readableStream = $this->prophesize(ReadableStreamInterface::class);
+        $readableStream->isReadable()->willReturn(false);
+        $stream = new Stream($readableStream->reveal());
+        $this->assertTrue($stream->eof());
+    }
 }
