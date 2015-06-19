@@ -22,25 +22,33 @@ final class MessageFactory implements MessageFactoryInterface
     }
 
     /**
-     * @param IcicleRequest $request
+     * @param IcicleRequest $icicleRequest
      * @return PsrRequest
      */
-    public function createRequest(IcicleRequest $request)
+    public function createRequest(IcicleRequest $icicleRequest)
     {
-        return new PsrRequest(
-            $this->createUri($request->getUri()),
-            $request->getMethod(),
-            new Stream($request->getBody()),
-            $request->getHeaders()
+        $request = new PsrRequest(
+            $this->createUri($icicleRequest->getUri()),
+            $icicleRequest->getMethod(),
+            new Stream($icicleRequest->getBody()),
+            $icicleRequest->getHeaders()
         );
+
+        $request = $request->withProtocolVersion($icicleRequest->getProtocolVersion());
+
+        return $request;
     }
 
-    public function createResponse(IcicleResponse $response)
+    public function createResponse(IcicleResponse $icicleResponse)
     {
-        return new PsrResponse(
-            new Stream($response->getBody()),
-            $response->getStatusCode(),
-            $response->getHeaders()
+        $response = new PsrResponse(
+            new Stream($icicleResponse->getBody()),
+            $icicleResponse->getStatusCode(),
+            $icicleResponse->getHeaders()
         );
+
+        $response = $response->withProtocolVersion($icicleResponse->getProtocolVersion());
+
+        return $response;
     }
 }
