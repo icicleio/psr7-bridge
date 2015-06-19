@@ -10,13 +10,13 @@ use Zend\Diactoros\Uri as PsrUri;
 use Zend\Diactoros\Request as PsrRequest;
 use Zend\Diactoros\Response as PsrResponse;
 
-class MessageFactory
+final class MessageFactory implements MessageFactoryInterface
 {
     /**
      * @param IcicleUri $icicleUri
      * @return PsrUri
      */
-    public static function createUri(IcicleUri $icicleUri)
+    public function createUri(IcicleUri $icicleUri)
     {
         return new PsrUri($icicleUri->__toString());
     }
@@ -25,17 +25,17 @@ class MessageFactory
      * @param IcicleRequest $request
      * @return PsrRequest
      */
-    public static function createRequest(IcicleRequest $request)
+    public function createRequest(IcicleRequest $request)
     {
         return new PsrRequest(
-            static::createUri($request->getUri()),
+            $this->createUri($request->getUri()),
             $request->getMethod(),
             new Stream($request->getBody()),
             $request->getHeaders()
         );
     }
 
-    public static function createResponse(IcicleResponse $response)
+    public function createResponse(IcicleResponse $response)
     {
         return new PsrResponse(
             new Stream($response->getBody()),
