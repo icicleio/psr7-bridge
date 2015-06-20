@@ -6,7 +6,6 @@ use Exception;
 use Icicle\Promise\PromiseInterface;
 use Icicle\Loop;
 use Icicle\Psr7Bridge\Stream\Stream;
-use Icicle\Socket\Socket;
 use Icicle\Socket\Stream\WritableStream;
 use Icicle\Stream\ReadableStreamInterface;
 use Icicle\Stream\SeekableStreamInterface;
