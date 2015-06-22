@@ -11,11 +11,11 @@ use Icicle\Stream\ReadableStreamInterface;
 use Icicle\Stream\SeekableStreamInterface;
 use Icicle\Stream\StreamInterface;
 use Icicle\Stream\WritableStreamInterface;
-use Icicle\Tests\Psr7Bridge\TestCase;
+use PHPUnit_Framework_TestCase;
 use Prophecy\Prophecy\ObjectProphecy;
 use RuntimeException;
 
-class StreamTest extends TestCase
+class StreamTest extends PHPUnit_Framework_TestCase
 {
     public function testReadReturnsDataFromAsyncStream()
     {
