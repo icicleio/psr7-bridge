@@ -5,6 +5,7 @@ namespace Icicle\Psr7Bridge;
 use Icicle\Http\Message\RequestInterface as IcicleRequest;
 use Icicle\Http\Message\ResponseInterface as IcicleResponse;
 use Icicle\Http\Message\UriInterface as IcicleUri;
+use Zend\Diactoros\ServerRequest;
 use Zend\Diactoros\Uri as PsrUri;
 use Zend\Diactoros\Request as PsrRequest;
 use Zend\Diactoros\Response as PsrResponse;
@@ -27,6 +28,22 @@ final class MessageFactory implements MessageFactoryInterface
     public function createRequest(IcicleRequest $icicleRequest)
     {
         $request = new PsrRequest(
+            $this->createUri($icicleRequest->getUri()),
+            $icicleRequest->getMethod(),
+            new Stream($icicleRequest->getBody()),
+            $icicleRequest->getHeaders()
+        );
+
+        $request = $request->withProtocolVersion($icicleRequest->getProtocolVersion());
+
+        return $request;
+    }
+
+    public function createServerRequest(IcicleRequest $icicleRequest)
+    {
+        $request = new ServerRequest(
+            [],
+            [],
             $this->createUri($icicleRequest->getUri()),
             $icicleRequest->getMethod(),
             new Stream($icicleRequest->getBody()),
