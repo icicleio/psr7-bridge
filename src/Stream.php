@@ -1,5 +1,5 @@
 <?php
-namespace Icicle\Psr7Bridge\Stream;
+namespace Icicle\Psr7Bridge;
 
 use Icicle\Loop;
 use Icicle\Socket\Socket;

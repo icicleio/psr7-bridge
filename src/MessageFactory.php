@@ -5,7 +5,6 @@ namespace Icicle\Psr7Bridge;
 use Icicle\Http\Message\RequestInterface as IcicleRequest;
 use Icicle\Http\Message\ResponseInterface as IcicleResponse;
 use Icicle\Http\Message\UriInterface as IcicleUri;
-use Icicle\Psr7Bridge\Stream\Stream;
 use Zend\Diactoros\Uri as PsrUri;
 use Zend\Diactoros\Request as PsrRequest;
 use Zend\Diactoros\Response as PsrResponse;
