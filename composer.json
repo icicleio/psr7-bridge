@@ -1,6 +1,6 @@
 {
     "name": "icicleio/psr7-bridge",
-    "description": "Bridges the messages of the Asynchronous Icicle HTTP component to synchronous PSR-7 interfaces.",
+    "description": "Bridges the messages of the asynchronous Icicle HTTP component to synchronous PSR-7 interfaces.",
     "keywords": [
         "psr7",
         "http"
@@ -11,6 +11,9 @@
         {
             "name": "Aaron Piotrowski",
             "email": "aaron@icicle.io"
+        },
+        {
+            "name": "Mateusz Tymek"
         }
     ],
     "require": {
