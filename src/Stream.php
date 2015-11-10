@@ -1,11 +1,12 @@
 <?php
 namespace Icicle\Psr7Bridge;
 
+use Icicle\Coroutine\Coroutine;
 use Icicle\Loop;
-use Icicle\Socket\Socket;
 use Icicle\Stream\ReadableStreamInterface;
 use Icicle\Stream\SeekableStreamInterface;
 use Icicle\Stream\StreamInterface;
+use Icicle\Stream\StreamResourceInterface;
 use Icicle\Stream\WritableStreamInterface;
 use Psr\Http\Message\StreamInterface as PsrStreamInterface;
 use RuntimeException;
@@ -19,6 +20,9 @@ class Stream implements PsrStreamInterface
      */
     private $stream;
 
+    /**
+     * @param \Icicle\Stream\StreamInterface $stream
+     */
     public function __construct(StreamInterface $stream)
     {
         $this->stream = $stream;
@@ -33,22 +37,13 @@ class Stream implements PsrStreamInterface
             throw new RuntimeException('Stream is not readable');
         }
 
-        $promise = $this->stream->read($length);
+        $promise = new Coroutine($this->stream->read($length));
 
-        while ($promise->isPending()) {
-            if (Loop\isEmpty()) {
-                throw new RuntimeException('Loop emptied without resolving the promise');
-            }
-            Loop\tick(true);
+        try {
+            return $promise->wait();
+        } catch (\Exception $exception) {
+            throw new RuntimeException('Error reading from stream', 0, $exception);
         }
-
-        $result = $promise->getResult();
-
-        if ($promise->isRejected()) {
-            throw new RuntimeException('Error reading from stream', 0, $result);
-        }
-
-        return $result;
     }
 
     /**
@@ -60,22 +55,13 @@ class Stream implements PsrStreamInterface
             throw new RuntimeException('Stream is not writable');
         }
 
-        $promise = $this->stream->write($data);
+        $promise = new Coroutine($this->stream->write($data));
 
-        while ($promise->isPending()) {
-            if (Loop\isEmpty()) {
-                throw new RuntimeException('Loop emptied without resolving the promise');
-            }
-            Loop\tick(true);
+        try {
+            return $promise->wait();
+        } catch (\Exception $exception) {
+            throw new RuntimeException('Error writing to stream', 0, $exception);
         }
-
-        $result = $promise->getResult();
-
-        if ($promise->isRejected()) {
-            throw new RuntimeException('Error writing to stream', 0, $result);
-        }
-
-        return $result;
     }
 
     /**
@@ -108,7 +94,7 @@ class Stream implements PsrStreamInterface
         $stream = $this->stream;
         $this->stream = null;
 
-        if ($stream instanceof Socket) {
+        if ($stream instanceof StreamResourceInterface) {
             return $stream->getResource();
         }
         return null;
@@ -161,18 +147,12 @@ class Stream implements PsrStreamInterface
             throw new RuntimeException('Stream is not seekable');
         }
 
-        $promise = $this->stream->seek($offset, $whence);
+        $promise = new Coroutine($this->stream->seek($offset, $whence));
 
-        while ($promise->isPending()) {
-            if (Loop\isEmpty()) {
-                throw new RuntimeException('Loop emptied without resolving the promise');
-            }
-            Loop\tick(true);
-        }
-
-        if ($promise->isRejected()) {
-            $result = $promise->getResult();
-            throw new RuntimeException('Error seeking stream', 0, $result);
+        try {
+            return $promise->wait();
+        } catch (\Exception $exception) {
+            throw new RuntimeException('Error seeking stream', 0, $exception);
         }
     }
 

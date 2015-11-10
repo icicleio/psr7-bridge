@@ -3,10 +3,9 @@
 namespace Icicle\Tests\Psr7Bridge;
 
 use Exception;
-use Icicle\Promise\PromiseInterface;
 use Icicle\Loop;
 use Icicle\Psr7Bridge\Stream;
-use Icicle\Socket\Stream\WritableStream;
+use Icicle\Stream\Pipe\WritablePipe;
 use Icicle\Stream\ReadableStreamInterface;
 use Icicle\Stream\SeekableStreamInterface;
 use Icicle\Stream\StreamInterface;
@@ -19,23 +18,10 @@ class StreamTest extends PHPUnit_Framework_TestCase
 {
     public function testReadReturnsDataFromAsyncStream()
     {
-        /** @var ObjectProphecy|PromiseInterface $promise */
-        $promise = $this->prophesize(PromiseInterface::class);
-        $pending = true;
-        $promise->isPending()->will(function () use (&$pending) {
-            if ($pending) {
-                // Schedule a function to simulate an event that resolves the promise.
-                Loop\schedule(function () use (&$pending) {
-                    $pending = false;
-                });
-            }
-            return $pending;
-        });
-        $promise->getResult()->willReturn('ABCDEFGHIJ');
-        $promise->isRejected()->willReturn(false);
-
         $readableStream = $this->prophesize(ReadableStreamInterface::class);
-        $readableStream->read(10)->willReturn($promise->reveal());
+        $readableStream->read(10)->will(function () {
+            yield 'ABCDEFGHIJ';
+        });
 
         $stream = new Stream($readableStream->reveal());
         $result = $stream->read(10);
@@ -54,32 +40,12 @@ class StreamTest extends PHPUnit_Framework_TestCase
 
     public function testReadThrowsExceptionWhenReadFails()
     {
-        /** @var ObjectProphecy|ReadableStreamInterface $readableStream */
+        /** @var ObjectProphecy|WritableStreamInterface $writableStream */
         $readableStream = $this->prophesize(ReadableStreamInterface::class);
-
-        /** @var ObjectProphecy|PromiseInterface $promise */
-        $promise = $this->prophesize(PromiseInterface::class);
-        $promise->isPending()->willReturn(false);
-        $promise->getResult()->willReturn(new Exception());
-        $promise->isRejected()->willReturn(true);
-
-        $readableStream->read(10)->willReturn($promise->reveal());
-
-        $stream = new Stream($readableStream->reveal());
-        $this->setExpectedException(RuntimeException::class);
-        $stream->read(10);
-    }
-
-    public function testReadThrowsExceptionWhenLoopIsEmptyWithoutResolvingPromise()
-    {
-        /** @var ObjectProphecy|ReadableStreamInterface $readableStream */
-        $readableStream = $this->prophesize(ReadableStreamInterface::class);
-
-        /** @var ObjectProphecy|PromiseInterface $promise */
-        $promise = $this->prophesize(PromiseInterface::class);
-        $promise->isPending()->willReturn(true);
-
-        $readableStream->read(10)->willReturn($promise->reveal());
+        $readableStream->read(10)->will(function () {
+            throw new Exception();
+            yield;
+        });
 
         $stream = new Stream($readableStream->reveal());
         $this->setExpectedException(RuntimeException::class);
@@ -88,26 +54,11 @@ class StreamTest extends PHPUnit_Framework_TestCase
 
     public function testWriteSendsDataToAsyncStream()
     {
-        /** @var ObjectProphecy|PromiseInterface $promise */
-        $promise = $this->prophesize(PromiseInterface::class);
-        $pending = true;
-        $promise->isPending()->will(function () use (&$pending) {
-            if ($pending) {
-                // Schedule a function to simulate an event that resolves the promise.
-                Loop\schedule(function () use (&$pending) {
-                    $pending = false;
-                });
-            }
-            return $pending;
-        });
-
-        $promise->getResult()->willReturn(10);
-        $promise->isRejected()->willReturn(false);
-
         /** @var ObjectProphecy|WritableStreamInterface $writableStream */
         $writableStream = $this->prophesize(WritableStreamInterface::class);
-
-        $writableStream->write('ABCDEFGHIJ')->willReturn($promise->reveal());
+        $writableStream->write('ABCDEFGHIJ')->will(function ($args) {
+            yield strlen($args[0]);
+        });
 
         $stream = new Stream($writableStream->reveal());
         $result = $stream->write('ABCDEFGHIJ');
@@ -128,14 +79,9 @@ class StreamTest extends PHPUnit_Framework_TestCase
     {
         /** @var ObjectProphecy|WritableStreamInterface $writableStream */
         $writableStream = $this->prophesize(WritableStreamInterface::class);
-
-        /** @var ObjectProphecy|PromiseInterface $promise */
-        $promise = $this->prophesize(PromiseInterface::class);
-        $promise->isPending()->willReturn(false);
-        $promise->getResult()->willReturn(new Exception());
-        $promise->isRejected()->willReturn(true);
-
-        $writableStream->write('ABCDEFGHIJ')->willReturn($promise->reveal());
+        $writableStream->write('ABCDEFGHIJ')->will(function ($data) {
+            yield strlen($data);
+        });
 
         $stream = new Stream($writableStream->reveal());
         $this->setExpectedException(RuntimeException::class);
@@ -146,12 +92,9 @@ class StreamTest extends PHPUnit_Framework_TestCase
     {
         /** @var ObjectProphecy|WritableStreamInterface $writableStream */
         $writableStream = $this->prophesize(WritableStreamInterface::class);
-
-        /** @var ObjectProphecy|PromiseInterface $promise */
-        $promise = $this->prophesize(PromiseInterface::class);
-        $promise->isPending()->willReturn(true);
-
-        $writableStream->write('ABCDEFGHIJ')->willReturn($promise->reveal());
+        $writableStream->write('ABCDEFGHIJ')->will(function ($data) {
+            yield strlen($data);
+        });
 
         $stream = new Stream($writableStream->reveal());
         $this->setExpectedException(RuntimeException::class);
@@ -206,24 +149,9 @@ class StreamTest extends PHPUnit_Framework_TestCase
     {
         /** @var ObjectProphecy|SeekableStreamInterface $seekableStream */
         $seekableStream = $this->prophesize(SeekableStreamInterface::class);
-
-        /** @var ObjectProphecy|PromiseInterface $promise */
-        $promise = $this->prophesize(PromiseInterface::class);
-        $pending = true;
-        $promise->isPending()->will(function () use (&$pending) {
-            if ($pending) {
-                // Schedule a function to simulate an event that resolves the promise.
-                Loop\schedule(function () use (&$pending) {
-                    $pending = false;
-                });
-            }
-            return $pending;
+        $seekableStream->seek(10, SEEK_SET)->will(function ($args) {
+            yield $args[0];
         });
-
-        $promise->getResult()->willReturn(null);
-        $promise->isRejected()->willReturn(false);
-
-        $seekableStream->seek(10, SEEK_SET)->willReturn($promise->reveal());
 
         $stream = new Stream($seekableStream->reveal());
         $stream->seek(10);
@@ -243,34 +171,14 @@ class StreamTest extends PHPUnit_Framework_TestCase
     {
         /** @var ObjectProphecy|SeekableStreamInterface $seekableStream */
         $seekableStream = $this->prophesize(SeekableStreamInterface::class);
-
-        /** @var ObjectProphecy|PromiseInterface $promise */
-        $promise = $this->prophesize(PromiseInterface::class);
-        $promise->isPending()->willReturn(false);
-        $promise->getResult()->willReturn(new Exception());
-        $promise->isRejected()->willReturn(true);
-
-        $seekableStream->seek(110, SEEK_SET)->willReturn($promise->reveal());
+        $seekableStream->seek(110, SEEK_SET)->will(function ($args) {
+            throw new Exception();
+            yield;
+        });
 
         $stream = new Stream($seekableStream->reveal());
         $this->setExpectedException(RuntimeException::class);
         $stream->seek(110);
-    }
-
-    public function testSeekThrowsExceptionWhenLoopIsEmptyWithoutResolvingPromise()
-    {
-        /** @var ObjectProphecy|SeekableStreamInterface $seekableStream */
-        $seekableStream = $this->prophesize(SeekableStreamInterface::class);
-
-        /** @var ObjectProphecy|PromiseInterface $promise */
-        $promise = $this->prophesize(PromiseInterface::class);
-        $promise->isPending()->willReturn(true);
-
-        $seekableStream->seek(99, SEEK_SET)->willReturn($promise->reveal());
-
-        $stream = new Stream($seekableStream->reveal());
-        $this->setExpectedException(RuntimeException::class);
-        $stream->seek(99);
     }
 
     public function testRewindUsesSeeksToResetPointer()
@@ -278,13 +186,9 @@ class StreamTest extends PHPUnit_Framework_TestCase
         /** @var ObjectProphecy|SeekableStreamInterface $seekableStream */
         $seekableStream = $this->prophesize(SeekableStreamInterface::class);
 
-        /** @var ObjectProphecy|PromiseInterface $promise */
-        $promise = $this->prophesize(PromiseInterface::class);
-        $promise->isPending()->willReturn(false);
-        $promise->getResult()->willReturn(null);
-        $promise->isRejected()->willReturn(false);
-
-        $seekableStream->seek(0, SEEK_SET)->willReturn($promise->reveal());
+        $seekableStream->seek(0, SEEK_SET)->will(function ($args) {
+            yield $args[0];
+        });
 
         $stream = new Stream($seekableStream->reveal());
         $stream->rewind(0);
@@ -319,7 +223,7 @@ class StreamTest extends PHPUnit_Framework_TestCase
     public function testDetachReturnsResourceFromWrappedStream()
     {
         /** @var ObjectProphecy|WritableStream $wrapped */
-        $wrapped = $this->prophesize(WritableStream::class);
+        $wrapped = $this->prophesize(WritablePipe::class);
         $wrapped->getResource()->willReturn('RESOURCE'); // doesn't need to be real PHP resource for this test
         $stream = new Stream($wrapped->reveal());
         $this->assertEquals('RESOURCE', $stream->detach());
@@ -345,28 +249,15 @@ class StreamTest extends PHPUnit_Framework_TestCase
 
     public function testGetContentsReadsUntilEof()
     {
-        /** @var ObjectProphecy|PromiseInterface $promise */
-        $promise = $this->prophesize(PromiseInterface::class);
-        $pending = true;
-        $promise->isPending()->will(function () use (&$pending) {
-            if ($pending) {
-                // Schedule a function to simulate an event that resolves the promise.
-                Loop\schedule(function () use (&$pending) {
-                    $pending = false;
-                });
-            }
-            return $pending;
-        });
-        $promise->getResult()->willReturn('ABCDEFGHIJ');
-        $promise->isRejected()->willReturn(false);
-
         $readableStream = $this->prophesize(ReadableStreamInterface::class);
-        $readableStream->read(stream::CHUNK_SIZE)->willReturn($promise->reveal());
+        $readableStream->read(stream::CHUNK_SIZE)->will(function () {
+            yield 'ABCDEFGHIJ';
+        });
         $readable = true;
         $readableStream->isReadable()->will(function () use (&$readable) {
             if ($readable) {
                 // Schedule a function to simulate an event that resolves the promise.
-                Loop\schedule(function () use (&$readable) {
+                Loop\queue(function () use (&$readable) {
                     $readable = false;
                 });
             }
@@ -382,28 +273,15 @@ class StreamTest extends PHPUnit_Framework_TestCase
 
     public function testToStringReadsUntilEof()
     {
-        /** @var ObjectProphecy|PromiseInterface $promise */
-        $promise = $this->prophesize(PromiseInterface::class);
-        $pending = true;
-        $promise->isPending()->will(function () use (&$pending) {
-            if ($pending) {
-                // Schedule a function to simulate an event that resolves the promise.
-                Loop\schedule(function () use (&$pending) {
-                    $pending = false;
-                });
-            }
-            return $pending;
-        });
-        $promise->getResult()->willReturn('ABCDEFGHIJ');
-        $promise->isRejected()->willReturn(false);
-
         $readableStream = $this->prophesize(ReadableStreamInterface::class);
-        $readableStream->read(stream::CHUNK_SIZE)->willReturn($promise->reveal());
+        $readableStream->read(stream::CHUNK_SIZE)->will(function () {
+            yield 'ABCDEFGHIJ';
+        });
         $readable = true;
         $readableStream->isReadable()->will(function () use (&$readable) {
             if ($readable) {
                 // Schedule a function to simulate an event that resolves the promise.
-                Loop\schedule(function () use (&$readable) {
+                Loop\queue(function () use (&$readable) {
                     $readable = false;
                 });
             }
@@ -418,20 +296,16 @@ class StreamTest extends PHPUnit_Framework_TestCase
 
     public function testToStringIgnoresExceptions()
     {
-        /** @var ObjectProphecy|PromiseInterface $promise */
-        $promise = $this->prophesize(PromiseInterface::class);
-        $pending = true;
-        $promise->isPending()->willReturn(false);
-        $promise->getResult()->willReturn(new Exception());
-        $promise->isRejected()->willReturn(true);
-
         $readableStream = $this->prophesize(ReadableStreamInterface::class);
-        $readableStream->read(stream::CHUNK_SIZE)->willReturn($promise->reveal());
+        $readableStream->read(stream::CHUNK_SIZE)->will(function () {
+            throw new Exception();
+            yield;
+        });
         $readable = true;
         $readableStream->isReadable()->will(function () use (&$readable) {
             if ($readable) {
                 // Schedule a function to simulate an event that resolves the promise.
-                Loop\schedule(function () use (&$readable) {
+                Loop\queue(function () use (&$readable) {
                     $readable = false;
                 });
             }
