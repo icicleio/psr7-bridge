@@ -199,21 +199,20 @@ class Stream implements PsrStreamInterface
      */
     public function getMetadata($key = null)
     {
-        if ($this->stream instanceof Socket) {
+        if ($this->stream instanceof StreamResourceInterface) {
             $resource = $this->stream->getResource();
 
-            if (get_resource_type($resource) === 'stream') {
-                $metadata = stream_get_meta_data($resource);
-                if (null === $key) {
-                    return $metadata;
-                }
-                return isset($metadata[$key]) ? $metadata[$key] : null;
+            $metadata = stream_get_meta_data($resource);
+            if (null === $key) {
+                return $metadata;
             }
+            return isset($metadata[$key]) ? $metadata[$key] : null;
         }
 
         if (null === $key) {
             return [];
         }
+
         return null;
     }
 }
